@@ -1,0 +1,70 @@
+---
+title: "UsedCars"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+```{r download}
+library(jsonlite)
+library(xml2)
+library(rvest)
+library(glue)
+
+multi.page <- function(myZip = "20723", myRadius = "50", sort = "BEST", priceMax = "10000", myPage = "1") {
+
+url <- glue("https://www.carfax.com/api/vehicles?zip={myZip}&radius={myRadius}&sort={sort}&priceMax={priceMax}&page={myPage}&dynamicRadius=false")
+  data <- read_html(url) %>%
+    html_nodes('p') %>%
+    html_text() %>%
+    fromJSON()
+  
+  dataIlike <- c("currentPrice", "mileage", "make", "model", "year", "mpgHighway", "mpgCity",
+                "engine", "bodytype",     "transmission", "fuel", "drivetype")  
+  usedCars <- data[["listings"]][, dataIlike]
+  
+  usedCars$bodytype <- as.factor(usedCars$bodytype)
+  usedCars$transmission <- as.factor(usedCars$transmission)
+  usedCars$fuel <- as.factor(usedCars$fuel)
+  usedCars$drivetype <- as.factor(usedCars$drivetype)
+  usedCars$currentPrice <- as.numeric(usedCars$currentPrice)
+  usedCars$mileage <- as.numeric(usedCars$mileage)
+  
+return(usedCars)
+  
+}
+```
+
+```{r run}
+
+#Create master dataframe
+
+search_results <- data.frame()
+
+#for loop to run the function for all pages
+
+for( i in 1:2)
+{
+    df_piece <- multi.page(myPage = i)
+    search_results <- rbind(search_results, df_piece)
+    
+}
+
+```
+
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
